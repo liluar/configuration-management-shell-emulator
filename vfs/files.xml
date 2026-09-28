@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<vfs>
+    <directory name="/">
+        <file name="readme.txt">Hello</file>
+        <file name="notes.txt">Some notes</file>
+        <file name="data.txt">12345</file>
+    </directory>
+</vfs>

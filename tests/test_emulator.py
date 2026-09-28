@@ -4,6 +4,7 @@ from contextlib import redirect_stdout
 from io import StringIO
 from src.main import (
     execute_command,
+    load_vfs,
     parse_cli_args,
     parse_input,
     run_startup_script,
@@ -96,3 +97,40 @@ class TestEmulator(unittest.TestCase):
         self.assertIn("cd ['home']", text)
         self.assertIn("Unknown command: hello", text)
         self.assertNotIn("#", text)
+
+    def test_load_minimal_vfs(self):
+        root = load_vfs("vfs/minimal.xml")
+
+        self.assertEqual(root.tag, "vfs")
+
+    def test_load_files_vfs(self):
+        root = load_vfs("vfs/files.xml")
+
+        root_directory = root.find("directory")
+        files = root_directory.findall("file")
+
+        self.assertEqual(len(files), 3)
+        
+    def test_load_nested_vfs(self):
+        root = load_vfs("vfs/nested.xml")
+
+        root_directory = root.find("directory")
+        home = root_directory.find("directory[@name='home']")
+        user = home.find("directory[@name='user']")
+        documents = user.find("directory[@name='documents']")
+        notes = documents.find("file[@name='notes.txt']")
+
+        self.assertIsNotNone(home)
+        self.assertIsNotNone(user)
+        self.assertIsNotNone(documents)
+        self.assertIsNotNone(notes)
+
+    def test_default_vfs(self):
+        root = load_vfs()
+
+        self.assertEqual(root.tag, "vfs")
+
+        root_directory = root.find("directory")
+
+        self.assertIsNotNone(root_directory)
+        self.assertEqual(root_directory.get("name"), "/")

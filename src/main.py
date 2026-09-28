@@ -1,6 +1,12 @@
+import xml.etree.ElementTree as ET
 import argparse 
 
 VFS_NAME = "my_vfs"
+DEFAULT_VFS = """
+<vfs>
+    <directory name="/" />
+</vfs>
+"""
 
 def parse_cli_args(args=None):
     parser = argparse.ArgumentParser()
@@ -20,6 +26,13 @@ def parse_input(user_input):
     args = parts[1:]
 
     return command, args
+
+def load_vfs(vfs_path=None):
+    if vfs_path is None:
+        return ET.fromstring(DEFAULT_VFS)
+
+    tree = ET.parse(vfs_path)
+    return tree.getroot()
 
 def run_startup_script(script_path):
     with open(script_path, "r", encoding="utf-8") as file:
@@ -76,6 +89,9 @@ if __name__ == "__main__":
 
     print("VFS:", args.vfs)
     print("Script:", args.script)
+
+    vfs_root = load_vfs(args.vfs)
+    print("VFS loaded:", vfs_root.tag)
 
     if args.script:
         run_startup_script(args.script)

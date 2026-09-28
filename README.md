@@ -158,3 +158,57 @@ my_vfs> hello
 Unknown command: hello
 my_vfs>
 ```
+
+## Этап 3 — VFS
+
+На третьем этапе добавлены:
+
+1. загрузка виртуальной файловой системы из XML-файла;
+2. хранение VFS в памяти;
+3. создание VFS по умолчанию, если путь не указан;
+4. минимальная VFS;
+5. VFS с несколькими файлами;
+6. VFS с вложенными папками не менее трех уровней;
+7. автоматические тесты загрузки VFS;
+8. Bash-скрипты для проверки различных вариантов VFS;
+9. стартовый скрипт для проверки функциональности предыдущих этапов.
+
+### Варианты VFS
+
+Минимальная VFS:
+
+```bash
+python3 src/main.py --vfs vfs/minimal.xml
+```
+
+VFS с несколькими файлами:
+
+```bash
+python3 src/main.py --vfs vfs/files.xml
+```
+
+VFS с вложенными папками:
+
+```bash
+python3 src/main.py --vfs vfs/nested.xml
+```
+
+Если параметр `--vfs` не указан, создается VFS по умолчанию в памяти.
+
+### Проверка этапа 3
+
+```bash
+./test_scripts/test_vfs_minimal.sh
+```
+
+```bash
+./test_scripts/test_vfs_files.sh
+```
+
+```bash
+./test_scripts/test_vfs_nested.sh
+```
+
+```bash
+./test_scripts/test_stage3.sh
+```
