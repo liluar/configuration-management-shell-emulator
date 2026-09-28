@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<vfs>
+    <directory name="/">
+        <file name="data.bin" encoding="base64">
+            AAECAwQ=
+        </file>
+    </directory>
+</vfs>

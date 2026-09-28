@@ -7,6 +7,7 @@ from src.main import (
     load_vfs,
     parse_cli_args,
     parse_input,
+    read_vfs_file,
     run_startup_script,
 )
 
@@ -134,3 +135,12 @@ class TestEmulator(unittest.TestCase):
 
         self.assertIsNotNone(root_directory)
         self.assertEqual(root_directory.get("name"), "/")
+    
+    def test_base64_file(self):
+        root = load_vfs("vfs/binary.xml")
+
+        root_directory = root.find("directory")
+        file_element = root_directory.find("file")
+        content = read_vfs_file(file_element)
+
+        self.assertEqual(content, bytes([0, 1, 2, 3, 4]))

@@ -1,3 +1,4 @@
+import base64
 import xml.etree.ElementTree as ET
 import argparse 
 
@@ -34,6 +35,14 @@ def load_vfs(vfs_path=None):
     tree = ET.parse(vfs_path)
     return tree.getroot()
 
+def read_vfs_file(file_element):
+    content = file_element.text or ""
+
+    if file_element.get("encoding") == "base64":
+        return base64.b64decode(content.strip())
+
+    return content
+    
 def run_startup_script(script_path):
     with open(script_path, "r", encoding="utf-8") as file:
         for line in file:
