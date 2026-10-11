@@ -3,6 +3,8 @@ import unittest
 from contextlib import redirect_stdout
 from io import StringIO
 from src.main import (
+    build_vfs,
+    create_shell_state,
     execute_command,
     load_vfs,
     parse_cli_args,
@@ -31,22 +33,73 @@ class TestEmulator(unittest.TestCase):
         self.assertFalse(result)
 
     def test_ls(self):
+        root = load_vfs("vfs/nested.xml")
+        vfs = build_vfs(root)
+        state = create_shell_state(vfs)
         output = StringIO()
 
         with redirect_stdout(output):
-            result = execute_command("ls", ["home"])
+            result = execute_command("ls", [], state)
 
         self.assertTrue(result)
-        self.assertEqual(output.getvalue().strip(), "ls ['home']")
+        self.assertEqual(output.getvalue().strip(), "home")
 
     def test_cd(self):
+        root = load_vfs("vfs/nested.xml")
+        vfs = build_vfs(root)
+        state = create_shell_state(vfs)
+
+        result = execute_command("cd", ["home"], state)
+
+        self.assertTrue(result)
+        self.assertEqual(state["cwd"], ["home"])
+
+    def test_pwd_after_cd(self):
+        root = load_vfs("vfs/nested.xml")
+        vfs = build_vfs(root)
+        state = create_shell_state(vfs)
+
+        execute_command("cd", ["home"], state)
+
         output = StringIO()
 
         with redirect_stdout(output):
-            result = execute_command("cd", ["home"])
+            execute_command("pwd", [], state)
+
+        self.assertEqual(output.getvalue().strip(), "/home")
+
+    def test_wc(self):
+        root = load_vfs("vfs/files.xml")
+        vfs = build_vfs(root)
+        state = create_shell_state(vfs)
+        output = StringIO()
+
+        with redirect_stdout(output):
+            result = execute_command("wc", ["readme.txt"], state)
 
         self.assertTrue(result)
-        self.assertEqual(output.getvalue().strip(), "cd ['home']")
+        self.assertEqual(
+            output.getvalue().strip(),
+            "1 1 5 readme.txt"
+        )
+
+    def test_uptime(self):
+        root = load_vfs("vfs/minimal.xml")
+        vfs = build_vfs(root)
+        state = create_shell_state(vfs)
+        output = StringIO()
+
+        with redirect_stdout(output):
+            result = execute_command("uptime", [], state)
+
+        self.assertTrue(result)
+
+        uptime = output.getvalue().strip()
+
+        self.assertRegex(
+            uptime,
+            r"^\d{2}:\d{2}:\d{2}$"
+        )
 
     def test_unknown_command(self):
         output = StringIO()
@@ -84,19 +137,25 @@ class TestEmulator(unittest.TestCase):
         self.assertEqual(args.script, "scripts/startup.txt")
 
     def test_startup_script(self):
+        root = load_vfs("vfs/nested.xml")
+        vfs = build_vfs(root)
+        state = create_shell_state(vfs)
         output = StringIO()
 
         with redirect_stdout(output):
-            result = run_startup_script("scripts/startup.txt")
+            result = run_startup_script(
+                "scripts/startup.txt",
+                state
+            )
 
         text = output.getvalue()
 
         self.assertTrue(result)
         self.assertIn("my_vfs> ls", text)
-        self.assertIn("ls []", text)
+        self.assertIn("home", text)
         self.assertIn("my_vfs> cd home", text)
-        self.assertIn("cd ['home']", text)
         self.assertIn("Unknown command: hello", text)
+        self.assertEqual(state["cwd"], ["home"])
         self.assertNotIn("#", text)
 
     def test_load_minimal_vfs(self):
@@ -144,3 +203,15 @@ class TestEmulator(unittest.TestCase):
         content = read_vfs_file(file_element)
 
         self.assertEqual(content, bytes([0, 1, 2, 3, 4]))
+
+    def test_pwd(self):
+        root = load_vfs("vfs/nested.xml")
+        vfs = build_vfs(root)
+        state = create_shell_state(vfs)
+        output = StringIO()
+
+        with redirect_stdout(output):
+            result = execute_command("pwd", [], state)
+
+        self.assertTrue(result)
+        self.assertEqual(output.getvalue().strip(), "/")

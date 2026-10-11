@@ -1,0 +1,42 @@
+# Проверка этапа 4
+
+# Текущая папка
+pwd
+
+# Содержимое корня
+ls
+
+# Переход по папкам
+cd home
+pwd
+ls
+
+cd user
+pwd
+ls
+
+cd documents
+pwd
+ls
+
+# Подсчет строк, слов и байт
+wc notes.txt
+
+# Время работы эмулятора
+uptime
+
+# Переход назад
+cd ..
+pwd
+
+# Абсолютный путь
+cd /home/user/documents
+pwd
+ls
+
+# Проверка ошибок
+cd unknown
+wc unknown.txt
+pwd hello
+uptime hello
+hello

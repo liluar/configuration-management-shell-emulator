@@ -1,5 +1,5 @@
 #!/bin/bash
 
 python3 src/main.py \
-  --vfs example_vfs.xml \
+  --vfs vfs/nested.xml \
   --script scripts/startup.txt

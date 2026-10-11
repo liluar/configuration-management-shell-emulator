@@ -1,8 +1,11 @@
+import argparse
 import base64
+import time
 import xml.etree.ElementTree as element_tree
-import argparse 
+
 
 VFS_NAME = "my_vfs"
+ONE_ARGUMENT = 1
 DEFAULT_VFS = """
 <vfs>
     <directory name="/" />
@@ -17,6 +20,7 @@ def parse_cli_args(args=None):
 
     return parser.parse_args(args)
 
+
 def parse_input(user_input):
     parts = user_input.split()
 
@@ -28,12 +32,14 @@ def parse_input(user_input):
 
     return command, args
 
+
 def load_vfs(vfs_path=None):
     if vfs_path is None:
         return element_tree.fromstring(DEFAULT_VFS)
 
     tree = element_tree.parse(vfs_path)
     return tree.getroot()
+
 
 def read_vfs_file(file_element):
     content = file_element.text or ""
@@ -42,8 +48,92 @@ def read_vfs_file(file_element):
         return base64.b64decode(content.strip())
 
     return content
+
+
+def build_directory(directory_element):
+    directory = {
+        "type": "directory",
+        "children": {},
+    }
+
+    for child in directory_element:
+        name = child.get("name")
+
+        if child.tag == "directory":
+            directory["children"][name] = build_directory(child)
+        elif child.tag == "file":
+            directory["children"][name] = {
+                "type": "file",
+                "content": read_vfs_file(child),
+            }
+
+    return directory
+
+
+def build_vfs(vfs_root):
+    root_directory = vfs_root.find("directory")
+
+    if root_directory is None:
+        raise ValueError("Root directory not found")
+
+    return build_directory(root_directory)
+
+
+def create_shell_state(vfs):
+    return {
+        "vfs": vfs,
+        "cwd": [],
+        "started_at": time.monotonic(),
+    }
+
+
+def command_uptime(args, state):
+    if args:
+        print("uptime: too many arguments")
+        return
+
+    elapsed = int(time.monotonic() - state["started_at"])
+
+    hours, remainder = divmod(elapsed, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    print(f"{hours:02d}:{minutes:02d}:{seconds:02d}")
+
+
+def get_directory(state, path_parts):
+    directory = state["vfs"]
+
+    for part in path_parts:
+        child = directory["children"].get(part)
+
+        if child is None or child["type"] != "directory":
+            return None
+
+        directory = child
+
+    return directory
+
+
+def resolve_path(current_path, target):
+    if target.startswith("/"):
+        path_parts = []
+    else:
+        path_parts = current_path.copy()
+
+    for part in target.split("/"):
+        if not part or part == ".":
+            continue
+
+        if part == "..":
+            if path_parts:
+                path_parts.pop()
+        else:
+            path_parts.append(part)
+
+    return path_parts
+
     
-def run_startup_script(script_path):
+def run_startup_script(script_path, state=None):
     with open(script_path, "r", encoding="utf-8") as file:
         for line in file:
             line = line.strip()
@@ -54,32 +144,120 @@ def run_startup_script(script_path):
             print(f"{VFS_NAME}> {line}")
 
             command, args = parse_input(line)
-            should_continue = execute_command(command, args)
+            should_continue = execute_command(command, args, state)
 
             if not should_continue:
                 return False
 
     return True
 
-def command_ls(args):
-    print("ls", args)
 
-def command_cd(args):
-    print("cd", args)
+def command_ls(args, state):
+    if len(args) > ONE_ARGUMENT:
+        print("ls: too many arguments")
+        return
 
-def execute_command(command, args):
+    if args:
+        path_parts = resolve_path(state["cwd"], args[0])
+    else:
+        path_parts = state["cwd"]
+
+    directory = get_directory(state, path_parts)
+
+    if directory is None:
+        print("ls: no such directory")
+        return
+
+    names = sorted(directory["children"].keys())
+    print(" ".join(names))
+
+
+def command_cd(args, state):
+    if len(args) != ONE_ARGUMENT:
+        print("cd: expected one argument")
+        return
+
+    target = args[0]
+    new_path = resolve_path(state["cwd"], target)
+    directory = get_directory(state, new_path)
+
+    if directory is None:
+        print(f"cd: no such directory: {target}")
+        return
+
+    state["cwd"] = new_path
+
+
+def command_pwd(args, state):
+    if args:
+        print("pwd: too many arguments")
+        return
+
+    if not state["cwd"]:
+        print("/")
+        return
+
+    print("/" + "/".join(state["cwd"]))
+
+
+def command_wc(args, state):
+    if len(args) != ONE_ARGUMENT:
+        print("wc: expected one argument")
+        return
+
+    target = args[0]
+    path_parts = resolve_path(state["cwd"], target)
+
+    if not path_parts:
+        print("wc: file not found")
+        return
+
+    file_name = path_parts[-1]
+    directory = get_directory(state, path_parts[:-1])
+
+    if directory is None:
+        print("wc: file not found")
+        return
+
+    file_node = directory["children"].get(file_name)
+
+    if file_node is None or file_node["type"] != "file":
+        print("wc: file not found")
+        return
+
+    content = file_node["content"]
+
+    if isinstance(content, bytes):
+        byte_count = len(content)
+        line_count = content.count(b"\n")
+        word_count = len(content.split())
+    else:
+        byte_count = len(content.encode("utf-8"))
+        line_count = len(content.splitlines())
+        word_count = len(content.split())
+
+    print(line_count, word_count, byte_count, target)
+
+
+def execute_command(command, args, state=None):
     if command == "ls":
-        command_ls(args)
+        command_ls(args, state)
     elif command == "cd":
-        command_cd(args)
+        command_cd(args, state)
+    elif command == "pwd":
+        command_pwd(args, state)
+    elif command == "wc":
+        command_wc(args, state)
+    elif command == "uptime":
+        command_uptime(args, state)
     elif command == "exit":
         return False
     else:
         print(f"Unknown command: {command}")
-    
     return True
 
-def repl():
+
+def repl(state):
     while True:
         user_input = input(f"{VFS_NAME}> ")
 
@@ -88,10 +266,11 @@ def repl():
         if not command:
             continue
 
-        should_continue = execute_command(command, args)
+        should_continue = execute_command(command, args, state)
 
         if not should_continue:
             break
+
 
 if __name__ == "__main__":
     args = parse_cli_args()
@@ -102,7 +281,9 @@ if __name__ == "__main__":
     vfs_root = load_vfs(args.vfs)
     print("VFS loaded:", vfs_root.tag)
 
-    if args.script:
-        run_startup_script(args.script)
+    vfs = build_vfs(vfs_root)
+    state = create_shell_state(vfs)
 
-    repl()
+    if not args.script or run_startup_script(args.script, state):
+        repl(state)
+
