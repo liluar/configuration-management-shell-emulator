@@ -1,5 +1,5 @@
 import base64
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as element_tree
 import argparse 
 
 VFS_NAME = "my_vfs"
@@ -30,9 +30,9 @@ def parse_input(user_input):
 
 def load_vfs(vfs_path=None):
     if vfs_path is None:
-        return ET.fromstring(DEFAULT_VFS)
+        return element_tree.fromstring(DEFAULT_VFS)
 
-    tree = ET.parse(vfs_path)
+    tree = element_tree.parse(vfs_path)
     return tree.getroot()
 
 def read_vfs_file(file_element):
