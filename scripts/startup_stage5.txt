@@ -1,0 +1,42 @@
+# Проверка этапа 5
+
+# Исходное состояние
+pwd
+ls /home/user/documents
+
+# Переименование файла
+mv /home/user/documents/notes.txt /home/user/documents/text.txt
+ls /home/user/documents
+wc /home/user/documents/text.txt
+
+# Перемещение файла в другую директорию
+mv /home/user/documents/text.txt /home/user
+ls /home/user
+wc /home/user/text.txt
+
+# Переименование директории
+mv /home/user/documents /home/user/docs
+ls /home/user
+ls /home/user/docs
+
+# Перемещение файла в директорию
+mv /home/user/text.txt /home/user/docs
+ls /home/user/docs
+wc /home/user/docs/text.txt
+
+# Ошибка: исходный объект не существует
+mv /home/user/missing.txt /home/user/new.txt
+
+# Ошибка: неправильное количество аргументов
+mv only_one_argument
+
+# Ошибка: файл уже существует
+mv /home/user/docs/text.txt /home/user/docs/text.txt
+
+# Ошибка: несуществующая директория назначения
+mv /home/user/docs/text.txt /missing/text.txt
+
+# Ошибка: попытка переместить директорию в саму себя
+mv /home/user/docs /home/user/docs
+
+exit

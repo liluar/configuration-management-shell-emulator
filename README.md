@@ -74,6 +74,23 @@
 
 ---
 
+# Этап 5 — Дополнительные команды
+
+На пятом этапе реализована команда `mv`.
+
+Команда позволяет:
+
+1. переименовывать файлы;
+2. переименовывать директории;
+3. перемещать файлы между директориями;
+4. перемещать объекты по абсолютным и относительным путям;
+5. обрабатывать ошибки;
+6. выполнять все изменения только в памяти;
+7. предотвращать перемещение директории внутрь самой себя;
+8. предотвращать замену уже существующего объекта.
+
+---
+
 # Структура проекта
 
 ```text
@@ -87,7 +104,8 @@
 ├── scripts/
 │   ├── startup.txt
 │   ├── startup_stage3.txt
-│   └── startup_stage4.txt
+│   ├── startup_stage4.txt
+│   └── startup_stage5.txt
 │
 ├── vfs/
 │   ├── minimal.xml
@@ -103,7 +121,8 @@
 │   ├── test_vfs_files.sh
 │   ├── test_vfs_nested.sh
 │   ├── test_stage3.sh
-│   └── test_stage4.sh
+│   ├── test_stage4.sh
+│   └── test_stage5.sh
 │
 ├── README.md
 ├── .gitignore
@@ -149,7 +168,7 @@ python3 src/main.py --vfs vfs/nested.xml
 ```bash
 ./run.sh \
   --vfs vfs/nested.xml \
-  --script scripts/startup_stage4.txt
+  --script scripts/startup_stage5.txt
 ```
 
 ---
@@ -234,7 +253,9 @@ vfs/binary.xml
 
 ## `ls`
 
-Выводит содержимое текущей директории:
+Выводит содержимое текущей директории.
+
+Пример:
 
 ```text
 my_vfs> ls
@@ -345,6 +366,92 @@ my_vfs> uptime
 
 ---
 
+## `mv`
+
+Используется для перемещения и переименования файлов и директорий.
+
+Формат:
+
+```text
+mv источник назначение
+```
+
+### Переименование файла
+
+```text
+my_vfs> mv notes.txt text.txt
+```
+
+После выполнения:
+
+```text
+my_vfs> ls
+text.txt
+```
+
+### Перемещение файла
+
+```text
+my_vfs> mv /home/user/documents/text.txt /home/user
+```
+
+После этого файл находится в:
+
+```text
+/home/user/text.txt
+```
+
+### Переименование директории
+
+```text
+my_vfs> mv /home/user/documents /home/user/docs
+```
+
+### Перемещение файла в директорию
+
+```text
+my_vfs> mv /home/user/text.txt /home/user/docs
+```
+
+### Ошибка: объект не существует
+
+```text
+my_vfs> mv missing.txt new.txt
+mv: no such file or directory: missing.txt
+```
+
+### Ошибка: неправильное количество аргументов
+
+```text
+my_vfs> mv only_one_argument
+mv: expected two arguments
+```
+
+### Ошибка: объект назначения уже существует
+
+```text
+my_vfs> mv /home/user/docs/text.txt /home/user/docs/text.txt
+mv: destination already exists: /home/user/docs/text.txt
+```
+
+### Ошибка: неправильный путь назначения
+
+```text
+my_vfs> mv /home/user/docs/text.txt /missing/text.txt
+mv: invalid destination: /missing/text.txt
+```
+
+### Ошибка: перемещение директории внутрь самой себя
+
+```text
+my_vfs> mv /home/user/docs /home/user/docs
+mv: cannot move directory into itself
+```
+
+Все изменения команды `mv` выполняются только во внутренней VFS в памяти.
+
+---
+
 ## `exit`
 
 Завершает работу эмулятора.
@@ -410,6 +517,10 @@ encoding="base64"
 
 Находит виртуальную директорию по заданному пути.
 
+## `get_node`
+
+Находит файл или директорию в VFS по заданному пути.
+
 ## `resolve_path`
 
 Обрабатывает абсолютные и относительные пути, а также элементы:
@@ -418,6 +529,10 @@ encoding="base64"
 .
 ..
 ```
+
+## `get_parent_and_name`
+
+Находит родительскую директорию объекта и его имя.
 
 ## `run_startup_script`
 
@@ -445,6 +560,24 @@ encoding="base64"
 
 Реализует команду `uptime`.
 
+## `get_source`
+
+Получает исходный объект, его имя и родительскую директорию для команды `mv`.
+
+## `get_destination`
+
+Определяет директорию и имя назначения для команды `mv`.
+
+## `contains_node`
+
+Проверяет, находится ли один объект VFS внутри другого.
+
+Используется для предотвращения перемещения директории внутрь самой себя.
+
+## `command_mv`
+
+Реализует команду `mv` для перемещения и переименования файлов и директорий.
+
 ## `execute_command`
 
 Определяет введенную команду и вызывает соответствующую функцию.
@@ -457,10 +590,16 @@ encoding="base64"
 
 # Стартовый скрипт этапа 4
 
-Для проверки этапа используется:
+Для проверки этапа 4 используется:
 
 ```text
 scripts/startup_stage4.txt
+```
+
+Запуск:
+
+```bash
+./test_scripts/test_stage4.sh
 ```
 
 Скрипт проверяет:
@@ -473,59 +612,37 @@ scripts/startup_stage4.txt
 - относительные пути;
 - абсолютные пути;
 - переход `..`;
-- несуществующие директории;
-- несуществующие файлы;
-- неправильные аргументы;
+- обработку ошибок;
 - неизвестную команду.
+
+---
+
+# Стартовый скрипт этапа 5
+
+Для проверки этапа 5 используется:
+
+```text
+scripts/startup_stage5.txt
+```
+
+Скрипт проверяет:
+
+- переименование файла;
+- перемещение файла;
+- переименование директории;
+- перемещение файла в директорию;
+- абсолютные пути;
+- работу с VFS;
+- несуществующий исходный объект;
+- неправильное количество аргументов;
+- существующий объект назначения;
+- неправильный путь назначения;
+- попытку переместить директорию внутрь самой себя.
 
 Запуск:
 
 ```bash
-./test_scripts/test_stage4.sh
-```
-
-Пример результата:
-
-```text
-VFS: vfs/nested.xml
-Script: scripts/startup_stage4.txt
-VFS loaded: vfs
-my_vfs> pwd
-/
-my_vfs> ls
-home
-my_vfs> cd home
-my_vfs> pwd
-/home
-my_vfs> cd user
-my_vfs> pwd
-/home/user
-my_vfs> cd documents
-my_vfs> pwd
-/home/user/documents
-my_vfs> ls
-notes.txt
-my_vfs> wc notes.txt
-1 3 14 notes.txt
-my_vfs> uptime
-00:00:00
-my_vfs> cd ..
-my_vfs> pwd
-/home/user
-my_vfs> cd /home/user/documents
-my_vfs> pwd
-/home/user/documents
-my_vfs> cd unknown
-cd: no such directory: unknown
-my_vfs> wc unknown.txt
-wc: file not found
-my_vfs> pwd hello
-pwd: too many arguments
-my_vfs> uptime hello
-uptime: too many arguments
-my_vfs> hello
-Unknown command: hello
-my_vfs> exit
+./test_scripts/test_stage5.sh
 ```
 
 ---
@@ -540,14 +657,14 @@ my_vfs> exit
 python3 -m unittest discover -s tests
 ```
 
-На этапе 4 выполняется 19 автоматических тестов.
+На этапе 5 выполняется 22 автоматических теста.
 
 Пример успешного результата:
 
 ```text
-...................
+......................
 ----------------------------------------------------------------------
-Ran 19 tests
+Ran 22 tests
 
 OK
 ```
@@ -586,6 +703,14 @@ VFS с несколькими файлами:
 
 ```bash
 ./test_scripts/test_stage4.sh
+```
+
+---
+
+# Проверка этапа 5
+
+```bash
+./test_scripts/test_stage5.sh
 ```
 
 Также необходимо запустить автоматические тесты:

@@ -6,6 +6,7 @@ from src.main import (
     build_vfs,
     create_shell_state,
     execute_command,
+    get_directory,
     load_vfs,
     parse_cli_args,
     parse_input,
@@ -215,3 +216,77 @@ class TestEmulator(unittest.TestCase):
 
         self.assertTrue(result)
         self.assertEqual(output.getvalue().strip(), "/")
+
+
+    def test_mv_rename_file(self):
+        root = load_vfs("vfs/nested.xml")
+        vfs = build_vfs(root)
+        state = create_shell_state(vfs)
+
+        execute_command(
+            "cd",
+            ["/home/user/documents"],
+            state
+        )
+        result = execute_command(
+            "mv",
+            ["notes.txt", "text.txt"],
+            state
+        )
+
+        directory = get_directory(
+            state,
+            ["home", "user", "documents"]
+        )
+
+        self.assertTrue(result)
+        self.assertNotIn("notes.txt", directory["children"])
+        self.assertIn("text.txt", directory["children"])
+
+
+    def test_mv_move_file(self):
+        root = load_vfs("vfs/nested.xml")
+        vfs = build_vfs(root)
+        state = create_shell_state(vfs)
+
+        result = execute_command(
+            "mv",
+            [
+                "/home/user/documents/notes.txt",
+                "/home/user",
+            ],
+            state
+        )
+
+        documents = get_directory(
+            state,
+            ["home", "user", "documents"]
+        )
+        user = get_directory(
+            state,
+            ["home", "user"]
+        )
+
+        self.assertTrue(result)
+        self.assertNotIn("notes.txt", documents["children"])
+        self.assertIn("notes.txt", user["children"])
+
+
+    def test_mv_missing_source(self):
+        root = load_vfs("vfs/nested.xml")
+        vfs = build_vfs(root)
+        state = create_shell_state(vfs)
+        output = StringIO()
+
+        with redirect_stdout(output):
+            result = execute_command(
+                "mv",
+                ["missing.txt", "new.txt"],
+                state
+            )
+
+        self.assertTrue(result)
+        self.assertEqual(
+            output.getvalue().strip(),
+            "mv: no such file or directory: missing.txt"
+        )
